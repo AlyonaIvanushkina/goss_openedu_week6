@@ -44,7 +44,7 @@ export default function appSrc(express, bodyParser, createReadStream, crypto, ht
   });
 
   app.post('/insert/', async(req, res) => {
-    const conn = await mongodb.MongoClient.connect(req.body.URL, {
+    const conn = await mongodb.MongoClient.connect('mongodb+srv://readwriter:123Fcflfbyfhf@cluster0.e4s04.mongodb.net/mongodemo?retryWrites=true&w=majority', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       useCreateIndex: true
