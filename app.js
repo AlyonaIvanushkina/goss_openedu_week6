@@ -43,17 +43,24 @@ export default function appSrc(express, bodyParser, createReadStream, crypto, ht
     }
   });
 
-  app.post('/insert/', async(req, res) => {
-    const conn = await mongodb.MongoClient.connect(req.body.URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      useCreateIndex: true
-    });
-    const db = conn.db('mongodemo');
-    let result = await db.users.insert({password: req.body.password, login: req.body.login});
-    db.close();
-    res.status(201).json(result);
-  });
+//   app.post('/insert/', async(req, res) => {
+//     const conn = await mongodb.MongoClient.connect(req.body.URL, {
+//       useNewUrlParser: true,
+//       useUnifiedTopology: true,
+//       useCreateIndex: true
+//     });
+//     const db = conn.db('mongodemo');
+//     let result = await db.users.insert({password: req.body.password, login: req.body.login});
+//     db.close();
+//     res.status(201).json(result);
+//   });
+  
+  app.use(bodyParser.urlencoded({ extended: true }))
+    .all('/insert/', (req, res) => {
+    res.set(CORS);
+    if (!!req.body.URL && !!req.body.login && !!req.body.password) {
+    const {MongoClient} = mongo;
+    const client = new MongoClient(req.body.URL, { useNewUrlParser: true, useUnifiedTopology: true });
 
   app.use('/test/', async(req, res) => {
     const page = new Zombie();
