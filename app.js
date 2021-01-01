@@ -1,8 +1,8 @@
-export default (express, bodyParser, createReadStream, crypto, http, path, cors, mongodb, puppeteer) => {
+export default (express, bodyParser, fs, crypto, http, mongodb, path, cors, puppeteer) => {
     const app = express();
-    const author = "itmo182954";
+     const author = "itmo182954";
     const __dirname = path.resolve();
- app.set('view engine', 'pug');
+    app.set('view engine', 'pug');
     app.set('views', path.join(__dirname, 'public'));
     app.use(express.static(path.join(__dirname, 'public')));
 
@@ -39,10 +39,12 @@ export default (express, bodyParser, createReadStream, crypto, http, path, cors,
 
             } catch (e) {
                 console.log(e);
-            }           
- 
+            }
+            
+            // res.setHeader('content-type', 'text/plain');
+            // res.send("0.8862481722945399");
         })
-        .get('/wordpress/wp-json/wp/v2/posts/1', (req, res) => res.status(200).json({title: {id: 1, rendered: 'author'}}))
+        .get('/wordpress/wp-json/wp/v2/posts/1', (req, res) => res.status(200).json({title: {id: 1, rendered: author}}))
         .post('/render/', (req, res) => {
             const {random2, random3} = req.body;
 
