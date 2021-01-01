@@ -1,22 +1,27 @@
-  
 {
-  "name": "gossCourse",
-  "version": "1.0.0",
+  "name": "week8",
+  "version": "1.0.2",
   "description": "",
-  "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+     "dev": "nodemon index.js"
   },
-  "keywords": [],
+  "engines": {
+    "node": "15.2.0"
+  },
   "author": "",
+  "type": "module",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
     "mongodb": "^3.6.3",
-    "mongoose": "^5.11.6",
-    "zombie": "^6.1.4"
+    "pug": "^3.0.0",
+    "puppeteer": "^5.5.0"  
+   },
+   "devDependencies": {
+     "nodemon": "^2.0.6"
   }
 }
