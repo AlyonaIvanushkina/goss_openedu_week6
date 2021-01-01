@@ -44,15 +44,39 @@ export default function appSrc(express, bodyParser, createReadStream, crypto, ht
   });
 
   app.post('/insert/', async(req, res) => {
-    const conn = await mongodb.MongoClient.connect(req.body.URL, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      useCreateIndex: true
-    });
-    const db = conn.db('mongodemo');
-    let result = await db.users.insert({password: req.body.password, login: req.body.login});
-    db.close();
-    res.status(201).json(result);
+//     const conn = await mongodb.MongoClient.connect(req.body.URL, {
+//       useNewUrlParser: true,
+//       useUnifiedTopology: true,
+//       useCreateIndex: true
+//     });
+//     const db = conn.db('mongodemo');
+//     let result = await db.users.insert({password: req.body.password, login: req.body.login});
+//     db.close();
+//     res.status(201).json(result);
+    if (!!req.body.URL && !!req.body.login && !!req.body.password) {
+      const {MongoClient} = mongodb;
+      const client = new MongoClient(req.body.URL, { useNewUrlParser: true, useUnifiedTopology: true });
+
+      async function run() {
+        try {
+          await client.connect();
+          const result = await client.db().collection('users').insertOne({
+            login: req.body.login.toString(),
+            password: req.body.password.toString()
+          })
+          await client.close();
+          res.send(result);
+        } catch (err) {
+          res.send(`Something went wrong: ${err}`);
+        } finally {
+          await client.close();
+          res.send();
+        }
+      }
+      run().catch();
+    } else {
+      res.send('itmo182954');
+    }
   });
 
   app.use('/test/', async(req, res) => {
