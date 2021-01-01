@@ -12,8 +12,8 @@ import http from 'http';
 import appSrc from './app.js';
 
 const app = appSrc(express, bodyParser, fs, crypto, http, mongodb, path, cors, puppeteer);
+const port = process.env.PORT || 3000;
 
-app.listen(process.env.PORT ?? 4321);
 app.listen(port, () => {
   console.log('Server is up!');
 });
