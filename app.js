@@ -1,103 +1,140 @@
-export default function appSrc(express, bodyParser, createReadStream, crypto, http, mongodb, Zombie, cors, path) {
-  const app = express();
-  const __dirname = path.resolve();
+export default (express, bodyParser, createReadStream, crypto, http, path, cors, mongodb, puppeteer) => {
+    const app = express();
+    const author = "itmo182954";
+    const __dirname = path.resolve();
+ app.set('view engine', 'pug');
+    app.set('views', path.join(__dirname, 'public'));
+    app.use(express.static(path.join(__dirname, 'public')));
 
-  app.use(bodyParser.json());
-  app.use(express.urlencoded());
-  app.set('view engine', 'pug');
-  app.set('views', path.join(__dirname, 'public'));
-  app.use(express.static(path.join(__dirname, 'public')));
-
-  app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,OPTIONS,DELETE");
-    next();
-  });
-
-  app.use(cors());
-  app.options('*', cors());
-
-  app.use('/login/', (req, res) => res.send('itmo182954'));
-
-  app.use('/code/', (req, res) => {
-    let readStream = createReadStream(import.meta.url.substring(7));
-    readStream.on('open', function () {
-      readStream.pipe(res);
+    app.use(bodyParser.json());
+    app.use(express.urlencoded());
+    app.use(function (req, res, next) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+        next()
     });
-  });
 
-  app.use('/sha1/:input/', (req, res) => {
-    res.send(crypto.createHash('sha1').update(req.params.input, "binary").digest("hex"))
-  });
+    app.use(cors());
+    app.options('*', cors());
 
-  app.use('/req/', (req, res) => {
-    if(req.method === "GET") {
-      http.get(req.query.addr,  (result) => {
+    app 
+        .get('/test/', async (req, res) => {
+            const { URL } = req.query;
+            
+            try {
+                const browser = await puppeteer.launch({ headless: true,
+                                                        args:['--no-sandbox', '--disable-setuid-sandbox']});
+    
+                const page = await browser.newPage();
 
-        let rawData = '';
-        result.on('data', (chunk) => { rawData += chunk; });
-        result.on('end', () => {
-            res.send(rawData);
+                await page.goto(URL);
+                await page.waitForSelector('#inp');
+                await page.waitForSelector('#bt');
+                await page.click('#bt');
+
+                const gotResponse = await page.$eval('#inp', el => el.value);
+                
+                res.send(gotResponse);
+                browser.close();
+
+            } catch (e) {
+                console.log(e);
+            }           
+ 
+        })
+        .get('/wordpress/wp-json/wp/v2/posts/1', (req, res) => res.status(200).json({title: {id: 1, rendered: 'author'}}))
+        .post('/render/', (req, res) => {
+            const {random2, random3} = req.body;
+
+
+            let { addr } = req.query;
+
+            console.log(addr);
+            
+            res.render('random', {random2: random2, random3: random3,});
+
+        })
+        .get('/wordpress/', (req, res) => res.status(200).render('wordpress'))
+        .post('/insert/', async (req, res) => {
+            const {login, password, URL} = req.body;
+
+            console.log(URL);
+
+            const client = new mongodb.MongoClient(URL);
+
+            try {
+                await client.connect();
+
+                const database = client.db('readusers');
+                const collection = database.collection('users');
+                const doc = { login: login, password: password };
+                const result = await collection.insertOne(doc);
+
+            } catch(error) {
+                console.log(error);
+            } finally {
+                await client.close();
+            }
+
+            res.status(200).end();
+        
+        })
+        .get('/login/', (req, res) => res.send(author))
+        .get('/code/', (req, res) => fs.createReadStream(import.meta.url.substring(7)).pipe(res))
+        .get('/sha1/:input/', (req, res) => {
+            const { input } = req.params;
+            res.setHeader('content-type', 'text/plain');
+            res.send(crypto.createHash('sha1').update(input).digest('hex'));
+        })
+        .get('/req', (req, res) => {
+            res.setHeader('content-type', 'text/plain');
+
+            let { addr } = req.query;
+
+            http.get(addr, (response) => {
+                response.setEncoding('utf8');
+                let rawData = '';
+                response.on('data', (chunk) => { rawData += chunk; });
+                response.on('end', () => {
+                    try {
+                        const parsedData = JSON.parse(rawData);
+                        console.log(parsedData);
+                        res.send(JSON.stringify(parsedData));
+                    } catch (e) {
+                        console.error(e.message);
+                    }
+                });
+            }).on('error', (e) => {
+                console.error(`Got error: ${e.message}`);
+            });
+
+        })
+        .post('/req', (req, res) => {
+            res.setHeader('content-type', 'text/plain');
+
+            let addr = req.body.addr;
+
+            http.get(addr, (response) => {
+                response.setEncoding('utf8');
+                let rawData = '';
+                response.on('data', (chunk) => { rawData += chunk; });
+                response.on('end', () => {
+                    try {
+                        const parsedData = JSON.parse(rawData);
+                        console.log(parsedData);
+                        res.send(JSON.stringify(parsedData));
+                    } catch (e) {
+                        console.error(e.message);
+                    }
+                });
+            }).on('error', (e) => {
+                console.error(`Got error: ${e.message}`);
+            });
+        })
+        .all('*', (req, res) => {
+            res.send(author);
         });
-      })
-    }
-
-    if(req.method === "POST") {
-      http.get(req.body.addr, (result) => {
-        let rawData = '';
-        result.on('data', (chunk) => { rawData += chunk; });
-        result.on('end', () => {
-          res.send(rawData);
-        });
-      });
-    }
-  });
 
 
-    app.get('/wordpress/wp-json/wp/v2/posts/1', (req, res) => res.status(200).json({title: {id: 1, rendered: "itmo182954"}}))
-    app.post('/render/', (req, res) => {
-      const {random2, random3} = req.body;
-
-
-      let { addr } = req.query;
-
-      console.log(addr);
-
-      res.render('random', {random2: random2, random3: random3,});
-    })
-    app.get('/wordpress/', (req, res) => res.status(200).render('wordpress'))
-
-  app.post('/insert/', async (req, res) => {
-    const {login, password, URL} = req.body;
-
-    const client = new mongodb.MongoClient(URL);
-
-    try {
-      await client.connect();
-
-      const database = client.db('readusers');
-      const collection = database.collection('users');
-      const doc = { login: login, password: password };
-      const result = await collection.insertOne(doc);
-
-    } catch(error) {
-      console.log(error);
-    } finally {
-      await client.close();
-    }
-
-    res.status(200).end();
-
-  });
-
-  app.use('/test/', async(req, res) => {
-    const page = new Zombie();
-    await page.visit(req.query.URL);
-    await page.pressButton('#bt');
-    const result = await page.document.querySelector('#inp').value;
-    res.send(result)
-  });
-
-  app.all('*', (req, res) => res.send('itmo182954'));
-  return app;
+    return app;
 }
