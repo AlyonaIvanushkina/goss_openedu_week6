@@ -3,7 +3,6 @@ import bodyParser from 'body-parser';
 import {createReadStream} from 'fs';
 import crypto from 'crypto';
 import http from 'http';
-import Zombie from 'zombie';
 import mongodb from 'mongodb';
 
 import appSrc from './app.js';
