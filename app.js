@@ -1,74 +1,161 @@
-export default function appSrc(express, bodyParser, createReadStream, crypto, http, mongo) {
+export default (express, bodyParser, fs, crypto, http, mongodb, path, cors) => {
     const app = express();
-    const CORS = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,OPTIONS,DELETE»',
-        'Content-Type': 'text/plain; charset=utf-8'
-    };
-    const login = "itmo182954";
-    app
-        .use(bodyParser.urlencoded({ extended: true }))
-        .all('/insert/', (req, res) => {
-            res.set(CORS);
-            if (!!req.body.URL && !!req.body.login && !!req.body.password) {
-                const {MongoClient} = mongo;
-                const client = new MongoClient(req.body.URL, { useNewUrlParser: true, useUnifiedTopology: true });
+    const __dirname = path.resolve();
+    app.set('view engine', 'pug');
+    app.set('views', path.join(__dirname, 'public'));
+    app.use(express.static(path.join(__dirname, 'public')));
 
-                async function run() {
-                    try {
-                        await client.connect();
-                        const result = await client.db().collection('users').insertOne({
-                            login: req.body.login.toString(),
-                            password: req.body.password.toString()
-                        })
-                        await client.close();
-                        res.send(result);
-                    } catch (err) {
-                        res.send(`Something went wrong: ${err}`);
-                    } finally {
-                        await client.close();
-                        res.send();
-                    }
-                }
-                run().catch();
-            } else {
-                res.send(login);
+    app.use(bodyParser.json());
+    app.use(express.urlencoded());
+    app.use(function (req, res, next) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS");
+        next()
+    });
+
+    app.use(cors());
+    app.options('*', cors());
+
+    app
+        .get('/wordpress/wp-json/wp/v2/posts/1', (req, res) => res.status(200).json({
+            title: {
+                id: 1,
+287618                rendered: "itmo182954"
             }
+        }))
+        .post('/render/', (req, res) => {
+            const {
+                random2,
+                random3
+            } = req.body;
+
+
+            let {
+                addr
+            } = req.query;
+
+            console.log(addr);
+
+            res.render('random', {
+                random2: random2,
+                random3: random3,
+            });
         })
-        .get('/login/', (req, res) => {
-            res.set(CORS);
-            res.send(login);
-        })
-        .get('/code/', (req, res) => {
-            res.set(CORS);
-            const chunks = [];
-            const readStream = createReadStream(import.meta.url.substring(7));
-            readStream.on('data', chunk => chunks.push(chunk));
-            readStream.on('end', () => res.send(Buffer.concat(chunks).toString('utf8')));
-        })
-        .all('/req/', (req, res) => {
-            res.set(CORS);
-            const url = req.method === "GET" ? req.query.addr : req.body.addr;
-            if (!!url) {
-                http.get(url, response => {
-                    var chunks = [];
-                    response.on('data', chunk => chunks += chunk);
-                    response.on('end', () => res.send(chunks));
-                });
-            } else {
-                res.send(login);
+        .get('/wordpress/', (req, res) => res.status(200).render('wordpress'))
+        .post('/insert/', async (req, res) => {
+            const {
+                login,
+                password,
+                URL
+            } = req.body;
+
+            console.log(URL);
+
+            const client = new mongodb.MongoClient(URL);
+
+            try {
+                await client.connect();
+
+                const database = client.db('readusers');
+                const collection = database.collection('users');
+                const doc = {
+                    login: login,
+                    password: password
+                };
+                const result = await collection.insertOne(doc);
+
+            } catch (error) {
+                console.log(error);
+            } finally {
+                await client.close();
             }
+
+            res.status(200).end();
+
         })
+        .get('/login/', (req, res) => res.send('itmo182954'))
+        .get('/code/', (req, res) => fs.createReadStream(
+            import.meta.url.substring(7)).pipe(res))
         .get('/sha1/:input/', (req, res) => {
-            res.set(CORS);
-            const hash = crypto.createHash('sha1')
-                .update(req.params.input)
-                .digest('hex')
-            res.send(hash);
+            const {
+                input
+            } = req.params;
+            res.setHeader('content-type', 'text/plain');
+            res.send(crypto.createHash('sha1').update(input).digest('hex'));
         })
-        .all('/*', (req, res) => {
-            res.set(CORS);
-            res.send(login);
+        .get('/req', (req, res) => {
+            res.setHeader('content-type', 'text/plain');
+
+            let {
+                addr
+            } = req.query;
+
+            http.get(addr, (response) => {
+                response.setEncoding('utf8');
+                let rawData = '';
+                response.on('data', (chunk) => {
+                    rawData += chunk;
+                });
+                response.on('end', () => {
+                    try {
+                        const parsedData = JSON.parse(rawData);
+                        console.log(parsedData);
+                        res.send(JSON.stringify(parsedData));
+                    } catch (e) {
+                        console.error(e.message);
+                    }
+                });
+            }).on('error', (e) => {
+                console.error(`Got error: ${e.message}`);
+            });
+
         })
+        .post('/req', (req, res) => {
+            res.setHeader('content-type', 'text/plain');
+
+            let addr = req.body.addr;
+
+            http.get(addr, (response) => {
+                response.setEncoding('utf8');
+                let rawData = '';
+                response.on('data', (chunk) => {
+                    rawData += chunk;
+                });
+                response.on('end', () => {
+                    try {
+                        const parsedData = JSON.parse(rawData);
+                        console.log(parsedData);
+                        res.send(JSON.stringify(parsedData));
+                    } catch (e) {
+                        console.error(e.message);
+                    }
+                });
+            }).on('error', (e) => {
+                console.error(`Got error: ${e.message}`);
+            });
+        })
+        .all('*', (req, res) => {
+            res.send('itmo182954');
+        });
+
+    app.get("/test/", async (req, res) => {
+        const {
+            URL
+        } = req.query;
+        const browser = await puppeteer.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+        const page = await browser.newPage();
+        await page.goto(URL);
+        await page.click("#bt");
+        const value = await page.evaluate(async () => {
+            const input = document.getElementById("inp");
+            return input.value;
+        });
+        res.send(value);
+    });
+
+
     return app;
 }
