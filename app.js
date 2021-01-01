@@ -1,5 +1,11 @@
 export default function appSrc(express, bodyParser, createReadStream, crypto, http, mongodb, Zombie) {
   const app = express();
+  
+  const CORS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,OPTIONS,DELETE»',
+    'Content-Type': 'text/plain; charset=utf-8'
+  };
 
   app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
