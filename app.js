@@ -43,7 +43,8 @@ export default function appSrc(express, bodyParser, createReadStream, crypto, ht
     }
   });
 
-  app.use('/insert/', async(req, res) => {
+  app..use(bodyParser.urlencoded({ extended: true }))
+    .all('/insert/', (req, res) => {
 //     const conn = await mongodb.MongoClient.connect(req.body.URL, {
 //       useNewUrlParser: true,
 //       useUnifiedTopology: true,
@@ -77,6 +78,7 @@ export default function appSrc(express, bodyParser, createReadStream, crypto, ht
     } else {
       res.send('itmo182954');
     }
+  })
   });
 
   app.use('/test/', async(req, res) => {
